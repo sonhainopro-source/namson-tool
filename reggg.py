@@ -109,7 +109,7 @@ def check_license():
     elif choice == "2":
       print(f"\n  {Fore.CYAN}🌐 Đang chuyển hướng đến trang lấy Key...{Style.RESET_ALL}")
       # Thay link netlify của cậu vào đây nếu muốn
-      webbrowser.open("https://netlifylinkcuacau.netlify.app/")
+      webbrowser.open("https://shopnamson.netlify.app/")
       input(
           f"\n  {Fore.YELLOW}💡 Lấy xong key thì bấm Enter để quay lại nhập..."
           f"{Style.RESET_ALL}"
