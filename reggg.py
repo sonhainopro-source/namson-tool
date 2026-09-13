@@ -7,13 +7,12 @@ import requests
 
 try:
     from colorama import Fore, Style, init
-
     init(autoreset=True)
 except ImportError:
     pass
 
 # Cấu hình Supabase của cậu
-SUPABASE_URL = "https://ssisxkimxgqkizomskar.supabase.co/rest/v1/keys"
+SUPABASE_URL = "https://ssisxkimxgqkizomskar.supabase.co/rest/v1"
 PUBLISHABLE_KEY = "sb_publishable_Y-gjOOHyzaGi3VepudvfmA_qzdDJsh4"
 
 HEADERS = {
@@ -22,7 +21,6 @@ HEADERS = {
     "Content-Type": "application/json",
     "Prefer": "return=representation",
 }
-
 
 def get_hwid():
   try:
@@ -37,12 +35,21 @@ def get_hwid():
   except Exception:
     return str(uuid.getnode())
 
-
 def verify_license(user_key):
   hwid = get_hwid()
   try:
+    # BƯỚC 1: Kiểm tra xem có phải Key của Admin không (Bảng admin_keys - Không khóa máy, không check status)
+    res_admin = requests.get(
+        f"{SUPABASE_URL}/admin_keys?license_key=eq.{user_key}", headers=HEADERS
+    )
+    admin_data = res_admin.json()
+    
+    if admin_data and len(admin_data) > 0:
+      return True, "Đăng nhập thành công với quyền Admin (Key VIP vĩnh viễn)!"
+
+    # BƯỚC 2: Nếu không phải key admin, kiểm tra trong bảng keys thông thường của khách
     response = requests.get(
-        f"{SUPABASE_URL}?license_key=eq.{user_key}", headers=HEADERS
+        f"{SUPABASE_URL}/keys?license_key=eq.{user_key}", headers=HEADERS
     )
     data = response.json()
 
@@ -63,7 +70,7 @@ def verify_license(user_key):
       update_headers = HEADERS.copy()
       update_payload = {"hwid": hwid, "status": 1}
       update_res = requests.patch(
-          f"{SUPABASE_URL}?id=eq.{row_id}",
+          f"{SUPABASE_URL}/keys?id=eq.{row_id}",
           headers=update_headers,
           json=update_payload,
       )
@@ -75,18 +82,16 @@ def verify_license(user_key):
   except Exception as e:
     return False, f"Lỗi kết nối database: {e}"
 
-
 def clear_screen():
   os.system("cls" if os.name == "nt" else "clear")
-
 
 def check_license():
   while True:
     clear_screen()
     print(f"\n{Fore.CYAN}  ╔═══════════════════════════════════════════╗")
-    print(f"  ║             🔐 HỆ THỐNG XÁC THỰC KEY      ║")
+    print(f"  ║            🔐 HỆ THỐNG XÁC THỰC KEY       ║")
     print(f"  ╚═══════════════════════════════════════════╝{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}[1] Nhập Key bản quyền (Khóa HWID)")
+    print(f"  {Fore.GREEN}[1] Nhập Key bản quyền (Khóa HWID / Key Admin)")
     print(f"  {Fore.YELLOW}[2] Lấy Key (Truy cập Web Get Key){Style.RESET_ALL}")
     print(f"  {Fore.RED}[0] Thoát chương trình{Style.RESET_ALL}")
 
@@ -108,7 +113,6 @@ def check_license():
 
     elif choice == "2":
       print(f"\n  {Fore.CYAN}🌐 Đang chuyển hướng đến trang lấy Key...{Style.RESET_ALL}")
-      # Thay link netlify của cậu vào đây nếu muốn
       webbrowser.open("https://shopnamson.netlify.app/")
       input(
           f"\n  {Fore.YELLOW}💡 Lấy xong key thì bấm Enter để quay lại nhập..."
@@ -118,16 +122,15 @@ def check_license():
     elif choice == "0":
       return False
 
-
 def show_menu():
   clear_screen()
   banner = f"""{Fore.CYAN}
-███╗   ██╗ █████╗ ███╗   ███╗     ███████╗ ██████╗  █████╗ ███╗   ██║
-████╗  ██║██╔══██╗████╗ ████║     ██╔════╝██╔═══██╗██╔══██╗████╗  ██║
-██╔██╗ ██║███████║██╔████╔██║     ███████╗██║   ██║██║  ██║██╔██╗ ██║
-██║╚██╗██║██╔══██║██║╚██╔╝██║     ╚════██║██║   ██║██║  ██║██║╚██╗██║
-██║ ╚████║██║  ██║██║ ╚═╝ ██║     ███████║╚██████╔╝╚█████╔╝██║ ╚████║
-╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝ ╚══════╝  ╚══════╝╚═╝  ╚═══╝
+███╗   ██╗ █████╗ ███╗   ███╗      ███████╗ ██████╗  █████╗ ███╗   ██║
+████╗  ██║██╔══██╗████╗ ████║      ██╔════╝██╔═══██╗██╔══██╗████╗  ██║
+██╔██╗ ██║███████║██╔████╔██║      ███████╗██║   ██║██║  ██║██╔██╗ ██║
+██║╚██╗██║██╔══██║██║╚██╔╝██║      ╚════██║██║   ██║██║  ██║██║╚██╗██║
+██║ ╚████║██║  ██║██║ ╚═╝ ██║      ███████║╚██████╔╝╚█████╔╝██║ ╚████║
+╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝     ╚═╝      ╚══════╝ ╚══════╝  ╚══════╝╚═╝  ╚═══╝
 {Style.RESET_ALL}"""
 
   print(banner)
@@ -159,7 +162,6 @@ def show_menu():
   for i, opt in enumerate(options):
     idx = "0" if i == len(options) - 1 else str(i + 1)
     print(f"  {Fore.MAGENTA}✿ {Fore.CYAN}[{idx}] {Fore.WHITE}{opt}")
-
 
 if check_license():
   while True:
